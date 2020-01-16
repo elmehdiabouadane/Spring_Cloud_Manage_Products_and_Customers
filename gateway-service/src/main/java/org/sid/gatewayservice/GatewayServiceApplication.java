@@ -9,6 +9,11 @@ import org.springframework.cloud.gateway.discovery.DiscoveryLocatorProperties;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @SpringBootApplication
 public class GatewayServiceApplication {
@@ -17,11 +22,27 @@ public class GatewayServiceApplication {
 		SpringApplication.run(GatewayServiceApplication.class, args);
 	}
 
-	//@Bean
+	@Bean
 	RouteLocator staticRoutes(RouteLocatorBuilder builder) {
 		return builder.routes()
-				.route(r -> r.path("/customers/**").uri("lb://CUSTOMER-SERVICE").id("r1"))
-				.route(r -> r.path("/products/**").uri("lb://INVENTORY-SERVICE").id("r2"))
+				.route(r -> r
+						.path("/publicCountries/**")
+						.filters(f -> f
+								.addRequestHeader("x-rapidapi-host","restcountries-v1.p.rapidapi.com")
+								.addRequestHeader("x-rapidapi-key","67f829b681msh503dc15be7d95d5p1ef3e3jsn2bc8abc4405b")
+								.rewritePath("/publicCountries/(?<segment>.*)","/${segment}")
+								.hystrix(h -> h.setName("countries").setFallbackUri("forward:/defaultCountries"))
+						)
+						.uri("https://restcountries-v1.p.rapidapi.com").id("r1"))
+				.route(r -> r
+						.path("/muslim/**")
+						.filters(f -> f
+								.addRequestHeader("x-rapidapi-host","muslimsalat.p.rapidapi.com")
+								.addRequestHeader("x-rapidapi-key","67f829b681msh503dc15be7d95d5p1ef3e3jsn2bc8abc4405b")
+								.rewritePath("/muslim/(?<segment>.*)","/${segment}")
+								.hystrix(h -> h.setName("muslimsalat").setFallbackUri("forward:/defaultSalat"))
+						)
+						.uri("https://muslimsalat.p.rapidapi.com").id("r2"))
 				.build();
 	}
 
@@ -30,4 +51,24 @@ public class GatewayServiceApplication {
 		return new DiscoveryClientRouteDefinitionLocator(rdc, dlp);
 	}
 
+}
+
+@RestController
+class CircuitBreakerRestController {
+	@GetMapping("/defaultCountries")
+	public Map<String,String> countries() {
+		Map<String,String> data = new HashMap<>();
+		data.put("message", "default Countries");
+		data.put("countries", "Maroc, Algérie, Tunisie, ...");
+		return data;
+	}
+
+	@GetMapping("/defaultSalat")
+	public Map<String,String> salat() {
+		Map<String,String> data = new HashMap<>();
+		data.put("message", "Horaire salat");
+		data.put("Fajr", "7:05");
+		data.put("Duhr", "13:45");
+		return data;
+	}
 }
