@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.data.rest.core.config.RepositoryRestConfiguration;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -38,8 +39,9 @@ public class InventoryServiceApplication {
 	}
 
 	@Bean
-	CommandLineRunner start(ProductRepository productRepository) {
+	CommandLineRunner start(ProductRepository productRepository, RepositoryRestConfiguration restConfiguration) {
 		return args -> {
+			restConfiguration.exposeIdsFor(Product.class);
 			productRepository.save(new Product(null, "Dell Latitude", 20000));
 			productRepository.save(new Product(null, "Mac Book Pro", 35000));
 			productRepository.save(new Product(null, "Routeur", 1000));
